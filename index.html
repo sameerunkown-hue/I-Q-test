@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="google-site-verification" content="2j2CdVlMPKr4h3E0jy">
+<title>Hard IQ Test</title>
+
+<style>
+body {
+    background: #0f172a;
+    color: white;
+    text-align: center;
+    font-family: Arial;
+}
+
+.container {
+    max-width: 400px;
+    margin: auto;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+}
+
+input, select {
+    width: 95%;
+    padding: 10px;
+    margin: 5px;
+}
+#timer {
+    color: #38bdf8;
+    font-size: 18px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Start Screen -->
+<div class="container" id="startScreen">
+    <h2>🧠 IQ Test Start</h2>
+
+    <input type="text" id="name" placeholder="Enter your name">
+    <input type="number" id="age" placeholder="Enter your age">
+
+    <select id="gender">
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+    </select>
+
+    <button onclick="startTest()">Start Test</button>
+</div>
+
+<!-- Quiz Screen -->
+<div class="container" id="quizScreen" style="display:none;">
+    <h2>🧠 Hard Visual IQ Test</h2>
+    <div id="timer">Time: 10</div>
+    <div id="question"></div>
+    <div id="options"></div>
+</div>
+
+<div id="qno">Question: 1/16</div>
+
+<script type="module">
+
+/* -----------------------------------
+   🔥 FIREBASE SETUP
+----------------------------------- */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getFirestore, collection, addDoc } 
+from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyA7EKsOWbidxu98q0FiiKkvQoMS7AfbmYE",
+  authDomain: "iq-test-result.firebaseapp.com",
+  projectId: "iq-test-result",
+  storageBucket: "iq-test-result.firebasestorage.app",
+  messagingSenderId: "172362339345",
+  appId: "1:172362339345:web:a8b04f4ca86d84e5ee0db0"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+async function saveToFirebase(userData) {
+    try {
+        await addDoc(collection(db, "iqResults"), userData);
+        console.log("Saved to Firebase ✔");
+    } catch (e) {
+        console.error("Firebase Error ❌", e);
+    }
+}
+
+window.saveToFirebase = saveToFirebase; // make it global
+
+/* -----------------------------------
+   🔥 IQ TEST LOGIC
+----------------------------------- */
+
+const questions = [
+{pattern:"2, 3, 5, 9, 17, 33, ?",options:["49","57","65","66"],answer:"65"},
+{pattern:"1, 4, 10, 22, 46, ?",options:["94","92","90","96"],answer:"94"},
+{pattern:"A, D, H, M, S, ?",options:["X","Y","Z","W"],answer:"X"},
+{pattern:"3, 12, 48, 192, ?",options:["576","768","960","384"],answer:"768"},
+{pattern:"1000, 500, 250, 125, ?",options:["60","62","64","70"],answer:"62"},
+{pattern:"1, 2, 6, 24, 120, 720, ?",options:["5040","4030","6020","7200"],answer:"5040"},
+{pattern:"7, 10, 16, 28, 52, ?",options:["100","104","108","110"],answer:"100"},
+{pattern:"2, 8, 32, 128, ?",options:["256","384","512","640"],answer:"512"},
+{pattern:"1, 3, 6, 10, 15, 21, ?",options:["27","28","30","32"],answer:"28"},
+{pattern:"9, 20, 43, 90, ?",options:["181","182","183","184"],answer:"182"},
+{pattern:"5, 11, 23, 47, 95, 191, ?",options:["383","381","385","389"],answer:"383"},
+{pattern:"2, 6, 12, 20, 30, 42, ?",options:["56","60","66","72"],answer:"56"},
+{pattern:"1, 1, 2, 3, 5, 8, 13, ?",options:["20","21","22","23"],answer:"21"},
+{pattern:"4, 9, 19, 39, 79, ?",options:["159","160","161","162"],answer:"159"},
+{pattern:"11, 21, 31, 41, 51, ?",options:["60","61","62","63"],answer:"61"}
+];
+
+let current = 0;
+let score = 0;
+let time = 10;
+let timer;
+
+let userName = "";
+let userAge = 0;
+let userGender = "";
+
+window.startTest = function () {
+    userName = document.getElementById("name").value;
+    userAge = parseInt(document.getElementById("age").value);
+    userGender = document.getElementById("gender").value;
+
+    if (!userName || !userAge || userAge <= 0) {
+        alert("Please enter valid details");
+        return;
+    }
+
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("quizScreen").style.display = "block";
+
+    current = 0;
+    score = 0;
+
+    loadQuestion();
+}
+
+function loadQuestion() {
+    if (current >= questions.length) {
+        showResult();
+        return;
+    }
+
+    time = 10;
+    document.getElementById("timer").innerText = "Time: " + time;
+
+    document.getElementById("qno").innerText =
+        `Question: ${current + 1}/${questions.length}`;
+
+    document.getElementById("question").innerHTML =
+        `<h3>${questions[current].pattern}</h3>`;
+
+    let html = "";
+    questions[current].options.forEach(opt => {
+        html += `<button onclick="checkAnswer('${opt}')">${opt}</button>`;
+    });
+
+    document.getElementById("options").innerHTML = html;
+
+    startTimer();
+}
+
+function startTimer() {
+    clearInterval(timer);
+
+    timer = setInterval(() => {
+        time--;
+        document.getElementById("timer").innerText = "Time: " + time;
+
+        if (time <= 0) {
+            clearInterval(timer);
+            nextQuestion();
+        }
+    }, 1000);
+}
+
+window.checkAnswer = function (ans) {
+    clearInterval(timer);
+
+    if (ans === questions[current].answer) {
+        score++;
+    }
+
+    nextQuestion();
+}
+
+function nextQuestion() {
+    clearInterval(timer);
+
+    current++;
+
+    if (current >= questions.length) {
+        showResult();
+        return;
+    }
+
+    loadQuestion();
+}
+
+function showResult() {
+    clearInterval(timer);
+
+    let finalScore = 50 + ((score * 100) / userAge);
+
+    let userData = {
+        name: userName,
+        age: userAge,
+        gender: userGender,
+        score: score,
+        iq: finalScore.toFixed(2)
+    };
+
+    saveToFirebase(userData); // 🔥 FIREBASE SAVE HERE
+
+    document.getElementById("quizScreen").innerHTML = `
+        <h2>🎯 Final Result</h2>
+
+        <p><b>Name:</b> ${userName}</p>
+        <p><b>Age:</b> ${userAge}</p>
+        <p><b>Gender:</b> ${userGender}</p>
+
+        <hr>
+
+        <p><b>Score:</b> ${score} / ${questions.length}</p>
+        <p><b>Final IQ Score:</b> ${finalScore.toFixed(2)}</p>
+
+        <button onclick="location.reload()">🔄 Restart Test</button>
+    `;
+}
+
+</script>
+</body>
